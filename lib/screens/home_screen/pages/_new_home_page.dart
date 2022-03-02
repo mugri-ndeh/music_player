@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:ui';
 import 'package:Excite/screens/home_screen/api/Songs.dart';
+import 'package:Excite/screens/home_screen/api/local_storage.dart';
 import 'package:Excite/screens/home_screen/api/services.dart';
+import 'package:Excite/screens/home_screen/model/playlist.dart';
 import 'package:Excite/screens/home_screen/notifiers/play_button_notifier.dart';
 import 'package:Excite/screens/home_screen/notifiers/progress_notifier.dart';
 import 'package:Excite/screens/home_screen/widgets/custom_button.dart';
@@ -10,11 +12,13 @@ import 'package:Excite/screens/home_screen/widgets/shimmer_widget.dart';
 import 'package:Excite/screens/profile_screen/profile.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:expandable/expandable.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Excite/constants/constants.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:just_audio/just_audio.dart';
+import 'package:provider/provider.dart';
 
 var _cardColor = Colors.black;
 const _maxHeight = 350.0;
@@ -29,7 +33,7 @@ class NewHomePage extends StatefulWidget {
 
 class _NewHomePageState extends State<NewHomePage>
     with TickerProviderStateMixin {
-  List<Songs> songs = [];
+  List songs = [];
   String query = '';
   bool isShuffle = false;
   bool isRepeat = false;
@@ -40,16 +44,66 @@ class _NewHomePageState extends State<NewHomePage>
   double _currentHeight = _minheight;
   AudioPlayer _audioPlayer = AudioPlayer();
   bool isLoading = true;
+  bool isFavSong = false;
+
+  int _selectedindex = 0;
+
+  late FavouritesHelper favouritesProvider;
+  late PlaylistHelper playlistProvider;
 
   // Create an animation with value of type "double
+
+  late List<Songs> playSongs;
+  late List currentPlaylist;
+  late List favouriteSongs;
+  late List artistSongs;
+  late List temp;
+  late List playlists;
+
+  // getFav() async {
+  //   var provider = Provider.of<FavouritesHelper>(context, listen: false);
+
+  //   var temp = (await provider.getFavourites());
+
+  //   var favSongs = temp.map((e) => Songs.fromJson(e)).toList();
+  //   return favSongs as Songs;
+  // }
+  Future<List> getFav() async {
+    var provider = Provider.of<FavouritesHelper>(context, listen: false);
+    var temp = (await provider.getFavourites());
+    setState(() {
+      songs = temp.map((e) => Songs.fromJson(e)).toList();
+      favouriteSongs = songs;
+    });
+    print('SONGS $songs');
+    return songs;
+  }
+
+  getArtistsSongs() {
+    Artist artist = Artist();
+    artistSongs = artist.getArtists(temp);
+    return artistSongs;
+  }
 
   @override
   void initState() {
     init();
-
+    getFav();
     _controller = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 800));
     super.initState();
+  }
+
+  bool isfavourite(Songs song) {
+    bool favourite = false;
+    int i;
+    for (i = 0; i < favouriteSongs.length; i++) {
+      if (song.id == favouriteSongs[i].id) {
+        favourite = true;
+      }
+    }
+    print(favourite);
+    return favourite;
   }
 
   void debounce(
@@ -70,6 +124,16 @@ class _NewHomePageState extends State<NewHomePage>
     final songs = await SongsApi.getSongs(query);
     setState(() {
       isLoading = false;
+      playSongs = songs;
+      temp = songs;
+      favouritesProvider = Provider.of<FavouritesHelper>(
+        context,
+        listen: false,
+      );
+      playlistProvider = Provider.of<PlaylistHelper>(
+        context,
+        listen: false,
+      );
     });
     setState(() => this.songs = songs);
   }
@@ -146,7 +210,12 @@ class _NewHomePageState extends State<NewHomePage>
                                       color: white,
                                     ),
                                   ),
-                                  onTap: () {},
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedindex = 0;
+                                      getArtistsSongs();
+                                    });
+                                  },
                                   size: 40),
                               Text(
                                 "Artists",
@@ -169,7 +238,13 @@ class _NewHomePageState extends State<NewHomePage>
                                       color: white,
                                     ),
                                   ),
-                                  onTap: () {},
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedindex = 1;
+                                      getFav();
+                                      //songs = await getFav();
+                                    });
+                                  },
                                   size: 40),
                               Text(
                                 "Favourites",
@@ -191,7 +266,12 @@ class _NewHomePageState extends State<NewHomePage>
                                       color: white,
                                     ),
                                   ),
-                                  onTap: () {},
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedindex = 2;
+                                      songs = playSongs;
+                                    });
+                                  },
                                   size: 40),
                               Text(
                                 "Playlists",
@@ -209,75 +289,27 @@ class _NewHomePageState extends State<NewHomePage>
                 ),
               ),
               Expanded(
-                child: isLoading
-                    ? ListView.builder(
-                        padding:
-                            EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
-                        itemBuilder: (context, index) {
-                          return Center(
-                              child: Padding(
-                            padding: const EdgeInsets.all(10.0),
-                            child: Container(
-                              child: buildShimmer(),
-                            ),
-                          ));
-                        })
-                    : ListView.builder(
-                        padding:
-                            EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
-                        itemCount: songs.length,
-                        physics: BouncingScrollPhysics(),
-                        itemBuilder: (context, index) {
-                          return Center(
-                            child: GestureDetector(
-                              onTap: () {
-                                setState(() {
-                                  CurrentSong.currentSong = index;
-                                });
-                                _audioPlayer.setUrl(songs[index].songSrc);
-                                _audioPlayer.play();
-                              },
-                              child: Padding(
-                                  padding: const EdgeInsets.all(10.0),
-                                  child: Container(
-                                    child: ListTile(
-                                      leading: ClipRRect(
-                                        borderRadius: BorderRadius.circular(12),
-                                        child: CachedNetworkImage(
-                                          imageUrl: songs[index].songImage,
-                                          height: 80,
-                                          width: 80,
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                      title: Text(
-                                        songs[index].songArtist,
-                                        style: GoogleFonts.poppins(
-                                            textStyle: TextStyle(fontSize: 14),
-                                            color: white),
-                                      ),
-                                      subtitle: Text(
-                                        songs[index].songName,
-                                        style: GoogleFonts.poppins(
-                                            textStyle: TextStyle(
-                                                color: white,
-                                                fontSize: 18,
-                                                fontWeight: FontWeight.bold)),
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(16.0)),
-                                      selected: true,
-                                      selectedTileColor: Colors
-                                          .blueAccent.shade100
-                                          .withOpacity(0.1),
-                                    ),
-                                  )),
-                            ),
-                          );
-                        },
-                      ),
-              ),
+                  child: isLoading
+                      ? ListView.builder(
+                          padding: EdgeInsets.symmetric(
+                              vertical: 5.0, horizontal: 10),
+                          itemBuilder: (context, index) {
+                            return Center(
+                                child: Padding(
+                              padding: const EdgeInsets.all(10.0),
+                              child: Container(
+                                child: buildShimmer(),
+                              ),
+                            ));
+                          })
+                      : IndexedStack(
+                          index: _selectedindex,
+                          children: [
+                            _buildArtists(),
+                            _buildFavourites(),
+                            _buildPlaylist(),
+                          ],
+                        )),
             ],
           ),
           GestureDetector(
@@ -340,6 +372,294 @@ class _NewHomePageState extends State<NewHomePage>
     );
   }
 
+  Widget _buildCard(List artists, String artistName, String url) {
+    return ExpandableNotifier(
+        child: Padding(
+      padding: const EdgeInsets.all(2),
+      child: Card(
+        color: Colors.black,
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: <Widget>[
+            ScrollOnExpand(
+              scrollOnExpand: true,
+              scrollOnCollapse: false,
+              child: ExpandablePanel(
+                theme: const ExpandableThemeData(
+                  headerAlignment: ExpandablePanelHeaderAlignment.center,
+                ),
+                header: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Container(
+                      child: ListTile(
+                          leading: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: CachedNetworkImage(
+                              imageUrl: url,
+                              height: 80,
+                              width: 80,
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                          title: Text(
+                            artistName,
+                            style: GoogleFonts.poppins(
+                                textStyle: TextStyle(
+                                    fontSize: 18, fontWeight: FontWeight.bold),
+                                color: Colors.white),
+                          ),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(16.0)),
+                          selected: true,
+                          selectedTileColor: Colors.black),
+                    )),
+                collapsed: Text(
+                  'See songs',
+                  softWrap: true,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(color: Colors.white),
+                ),
+                expanded: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    for (int i = 0; i < artists.length; i++)
+                      GestureDetector(
+                        onTap: () {
+                          print('TAPP');
+                          setState(() {
+                            isFavSong = isfavourite(artists[i]);
+                            CurrentSong.currentSong = i;
+                            currentPlaylist = artists;
+                            _audioPlayer.setUrl(artists[i].songSrc);
+                            _audioPlayer.play();
+                          });
+                        },
+                        child: Padding(
+                            padding: const EdgeInsets.all(10.0),
+                            child: Container(
+                              child: ListTile(
+                                leading: ClipRRect(
+                                  borderRadius: BorderRadius.circular(100),
+                                  child: CachedNetworkImage(
+                                    imageUrl: artists[i].songImage,
+                                    height: 40,
+                                    width: 40,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                                title: Text(
+                                  artists[i].songName,
+                                  style: GoogleFonts.poppins(
+                                      textStyle: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold)),
+                                ),
+                                shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(16.0)),
+                                selected: true,
+                                selectedTileColor:
+                                    Colors.blueAccent.shade100.withOpacity(0.1),
+                              ),
+                            )),
+                      ),
+                  ],
+                ),
+                builder: (_, collapsed, expanded) {
+                  return Padding(
+                    padding: EdgeInsets.only(left: 10, right: 10, bottom: 10),
+                    child: Expandable(
+                      collapsed: collapsed,
+                      expanded: expanded,
+                      theme: const ExpandableThemeData(crossFadePoint: 0),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    ));
+  }
+
+  Widget _buildArtists() {
+    getArtistsSongs();
+    // List list = artistSongs[index].map((e) => Songs.fromJson(e)).toList();
+    //print(list.toString());
+
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: ExpandableTheme(
+        data: const ExpandableThemeData(
+          iconColor: Colors.blue,
+          useInkWell: true,
+        ),
+        child: ListView.builder(
+          padding: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
+          itemCount: artistSongs.length,
+          physics: BouncingScrollPhysics(),
+          itemBuilder: (context, index) {
+            print(songs);
+            return ExpandableNotifier(
+              child: Center(
+                child: GestureDetector(
+                    onTap: () {
+                      //setState(() async {});
+                      List list = artistSongs[index]
+                          .map((e) => Songs.fromJson(e))
+                          .toList()[index];
+                      print(list.toString());
+                    },
+                    child: _buildCard(
+                        artistSongs[index]
+                            .map((e) => Songs.fromJson(e))
+                            .toList(),
+                        artistSongs[index]
+                            .map((e) => Songs.fromJson(e))
+                            .toList()[index]
+                            .songArtist,
+                        artistSongs[index]
+                            .map((e) => Songs.fromJson(e))
+                            .toList()[index]
+                            .songImage)),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildFavourites() {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: Consumer<FavouritesHelper>(
+        builder: (_, favProv, __) => ListView.builder(
+          padding: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
+          itemCount: songs.length,
+          physics: BouncingScrollPhysics(),
+          itemBuilder: (context, index) {
+            return Center(
+              child: GestureDetector(
+                onTap: () {
+                  setState(() async {
+                    currentPlaylist = await getFav();
+                    isFavSong = isfavourite(songs[index]);
+                    CurrentSong.currentSong = index;
+                    CurrentSong.favourite = true;
+                    _audioPlayer.setUrl(songs[index].songSrc);
+                    _audioPlayer.play();
+                  });
+                },
+                child: Padding(
+                    padding: const EdgeInsets.all(10.0),
+                    child: Container(
+                      child: ListTile(
+                        leading: ClipRRect(
+                          borderRadius: BorderRadius.circular(12),
+                          child: CachedNetworkImage(
+                            imageUrl: songs[index].songImage,
+                            height: 80,
+                            width: 80,
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        title: Text(
+                          songs[index].songArtist,
+                          style: GoogleFonts.poppins(
+                              textStyle: TextStyle(fontSize: 14),
+                              color: Colors.white),
+                        ),
+                        subtitle: Text(
+                          songs[index].songName,
+                          style: GoogleFonts.poppins(
+                              textStyle: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold)),
+                        ),
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16.0)),
+                        selected: true,
+                        selectedTileColor:
+                            Colors.blueAccent.shade100.withOpacity(0.1),
+                      ),
+                    )),
+              ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  Widget _buildPlaylist() {
+    return Scaffold(
+      floatingActionButton: FloatingActionButton(
+        child: Icon(Icons.add),
+        onPressed: () {},
+      ),
+      backgroundColor: Colors.black,
+      body: ListView.builder(
+        padding: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
+        itemCount: songs.length,
+        physics: BouncingScrollPhysics(),
+        itemBuilder: (context, index) {
+          return Center(
+            child: GestureDetector(
+              onTap: () {
+                setState(() {
+                  currentPlaylist = playSongs;
+                  isFavSong = isfavourite(songs[index]);
+
+                  CurrentSong.currentSong = index;
+                  print('IS Current song: ${CurrentSong.favourite}');
+                });
+                _audioPlayer.setUrl(songs[index].songSrc);
+                _audioPlayer.play();
+              },
+              child: Padding(
+                  padding: const EdgeInsets.all(10.0),
+                  child: Container(
+                    child: ListTile(
+                      leading: ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: CachedNetworkImage(
+                          imageUrl: songs[index].songImage,
+                          height: 80,
+                          width: 80,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                      title: Text(
+                        songs[index].songArtist,
+                        style: GoogleFonts.poppins(
+                            textStyle: TextStyle(fontSize: 14), color: white),
+                      ),
+                      subtitle: Text(
+                        songs[index].songName,
+                        style: GoogleFonts.poppins(
+                            textStyle: TextStyle(
+                                color: white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold)),
+                      ),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(16.0)),
+                      selected: true,
+                      selectedTileColor:
+                          Colors.blueAccent.shade100.withOpacity(0.1),
+                    ),
+                  )),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildExpandedContent() {
     if (CurrentSong.currentSong == null) {
       return SizedBox();
@@ -362,7 +682,42 @@ class _NewHomePageState extends State<NewHomePage>
                             color: white,
                           ),
                         ),
-                        onTap: () {},
+                        onTap: () {
+                          print('FAV tapped');
+                          showDialog(
+                              context: context,
+                              builder: (c) => AlertDialog(
+                                    content: ListView.builder(
+                                        itemBuilder: (c, i) => GestureDetector(
+                                              child: ListTile(
+                                                title: Text(
+                                                  songs[i].songArtist,
+                                                  style: GoogleFonts.poppins(
+                                                      textStyle: TextStyle(
+                                                          fontSize: 14),
+                                                      color: white),
+                                                ),
+                                                subtitle: Text(
+                                                  songs[i].songName,
+                                                  style: GoogleFonts.poppins(
+                                                      textStyle: TextStyle(
+                                                          color: white,
+                                                          fontSize: 18,
+                                                          fontWeight:
+                                                              FontWeight.bold)),
+                                                ),
+                                                shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                            16.0)),
+                                                selected: true,
+                                                selectedTileColor: Colors
+                                                    .blueAccent.shade100
+                                                    .withOpacity(0.1),
+                                              ),
+                                            )),
+                                  ));
+                        },
                         size: 50),
                     SizedBox(width: MediaQuery.of(context).size.width * 0.06),
                     Center(
@@ -376,7 +731,8 @@ class _NewHomePageState extends State<NewHomePage>
                               decoration: BoxDecoration(
                                 image: DecorationImage(
                                   image: CachedNetworkImageProvider(
-                                    songs[CurrentSong.currentSong!].songImage,
+                                    currentPlaylist[CurrentSong.currentSong!]
+                                        .songImage,
                                   ),
                                   fit: BoxFit.cover,
                                 ),
@@ -393,12 +749,38 @@ class _NewHomePageState extends State<NewHomePage>
                     CustomButtonWidget(
                         child: Center(
                           child: FaIcon(
-                            FontAwesomeIcons.heart,
+                            isFavSong
+                                ? FontAwesomeIcons.solidHeart
+                                : FontAwesomeIcons.heart,
                             size: 20,
                             color: white,
                           ),
                         ),
-                        onTap: () {},
+                        onTap: () async {
+                          print('HEART TAPPED');
+                          if (isfavourite(
+                              currentPlaylist[CurrentSong.currentSong!])) {
+                            setState(() {
+                              favouritesProvider.remove(
+                                  currentPlaylist[CurrentSong.currentSong!]);
+                              isFavSong = false;
+                              getFav();
+                            });
+
+                            await favouritesProvider.getFavourites();
+                          } else {
+                            setState(() {
+                              favouritesProvider.addFavourites(
+                                  currentPlaylist[CurrentSong.currentSong!]);
+                              isFavSong = true;
+                              getFav();
+                            });
+
+                            // await favouritesProvider.getFavourites();
+                          }
+
+                          //print(provider.getFavourites().length);
+                        },
                         size: 50),
                   ],
                 ),
@@ -406,7 +788,7 @@ class _NewHomePageState extends State<NewHomePage>
                   height: 15,
                 ),
                 Text(
-                  songs[CurrentSong.currentSong!].songName,
+                  currentPlaylist[CurrentSong.currentSong!].songName,
                   style: GoogleFonts.poppins(
                     textStyle: TextStyle(
                       fontSize: 18,
@@ -415,7 +797,7 @@ class _NewHomePageState extends State<NewHomePage>
                   ),
                 ),
                 Text(
-                  songs[CurrentSong.currentSong!].songArtist,
+                  currentPlaylist[CurrentSong.currentSong!].songArtist,
                   style: GoogleFonts.poppins(
                       textStyle: TextStyle(
                           fontSize: 16, color: Colors.white.withAlpha(90))),
@@ -487,10 +869,10 @@ class _NewHomePageState extends State<NewHomePage>
                                 CurrentSong.currentSong! - 1;
                             _audioPlayer.stop();
                             _audioPlayer.setUrl(
-                                songs[CurrentSong.currentSong!].songSrc);
+                                currentPlaylist[CurrentSong.currentSong!]
+                                    .songSrc);
                             _audioPlayer.play();
                           }
-                          ;
                         });
                       },
                       size: 50,
@@ -549,12 +931,14 @@ class _NewHomePageState extends State<NewHomePage>
                       ),
                       onTap: () {
                         setState(() {
-                          if (CurrentSong.currentSong != songs.length - 1) {
+                          if (CurrentSong.currentSong !=
+                              currentPlaylist.length - 1) {
                             CurrentSong.currentSong =
                                 CurrentSong.currentSong! + 1;
                             _audioPlayer.stop();
                             _audioPlayer.setUrl(
-                                songs[CurrentSong.currentSong!].songSrc);
+                                currentPlaylist[CurrentSong.currentSong!]
+                                    .songSrc);
                             _audioPlayer.play();
                           } else {
                             return null;
@@ -616,7 +1000,6 @@ class _NewHomePageState extends State<NewHomePage>
                 _audioPlayer.setUrl(songs[CurrentSong.currentSong!].songSrc);
                 _audioPlayer.play();
               }
-              ;
             });
           },
         ),
@@ -635,7 +1018,7 @@ class _NewHomePageState extends State<NewHomePage>
                 )
               : CircleAvatar(
                   backgroundImage: CachedNetworkImageProvider(
-                      songs[CurrentSong.currentSong!].songImage),
+                      currentPlaylist[CurrentSong.currentSong!].songImage),
                   maxRadius: 20.0,
                 ),
         ),
@@ -744,6 +1127,7 @@ class _NewHomePageState extends State<NewHomePage>
 
 class CurrentSong with ChangeNotifier {
   static int? currentSong;
+  static bool favourite = false;
 }
 
 Widget buildShimmer() => ListTile(
