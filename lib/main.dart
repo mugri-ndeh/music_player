@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:Excite/screens/home_screen/api/local_storage.dart';
 import 'package:Excite/screens/home_screen/home_screen.dart';
 import 'package:flutter/services.dart';
+import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/material.dart';
 import 'package:Excite/screens/login_screen/login_screen.dart';
@@ -20,13 +22,19 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Excite',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => FavouritesHelper()),
+        ChangeNotifierProvider(create: (_) => PlaylistHelper()),
+      ],
+      child: MaterialApp(
+        title: 'Excite',
+        debugShowCheckedModeBanner: false,
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+        ),
+        home: loginData != null ? HomeScreen() : LoginScreen(),
       ),
-      home: loginData != null ? HomeScreen() : LoginScreen(),
     );
   }
 }
