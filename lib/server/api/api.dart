@@ -5,4 +5,6 @@ class Api {
   static const String getSongs_api = api + "api/music_list_api.php";
   static const String profileupdate_api = api + "api/update_profile.php";
   static const String forgot_api = api + "api/forgot_password_api.php";
+  static const String artist_api =
+      "https://app.excite-digital.co.uk/api/artist_api.php";
 }
