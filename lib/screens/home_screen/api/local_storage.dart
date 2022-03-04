@@ -6,6 +6,7 @@ import 'package:localstorage/localstorage.dart';
 class PlaylistHelper with ChangeNotifier {
   // final PlaylistList list = new PlaylistList();
   List playlists = [];
+  List songs = [];
   final LocalStorage storage = new LocalStorage('playlists');
 
   init() async {
@@ -16,29 +17,80 @@ class PlaylistHelper with ChangeNotifier {
     init();
   }
 
-  addItem(String title, List<Songs> songs) {
-    final item = new Playlist(title: title, songs: songs);
-    playlists.add(item);
-    _saveToStorage(title);
+  addItem(String title, List songs) async {
+    await storage.ready;
+
+    final item = new Playlist(
+        title: title, songs: songs.map((e) => e.toJson()).toList());
+    playlists.add(item.toJson());
+    _saveToStorage();
     notifyListeners();
   }
 
-  _saveToStorage(String title) async {
+  addToPlaylist(String title, Songs song) {
+    for (var playlist in playlists) {
+      if (Playlist.fromJson(playlist).title == title) {
+        Playlist.fromJson(playlist).songs.add(song.toJson());
+        _saveToStorage();
+      }
+    }
+  }
+
+  _saveToStorage() async {
     await storage.ready;
 
-    storage.setItem(title, playlists);
+    storage.setItem('playlist', playlists).then((value) => print('ADDED'));
+    print(playlists);
     notifyListeners();
   }
 
   clearStorage() async {
     await storage.clear();
-    playlists = storage.getItem('playlists') ?? [];
+    playlists = storage.getItem('playlist') ?? [];
     notifyListeners();
+  }
+
+  removePlaylist(String title) async {
+    await storage.ready;
+
+    for (var playlist in playlists) {
+      if (Playlist.fromJson(playlist).title == title) {
+        playlists.remove(playlist);
+        _saveToStorage();
+      }
+    }
+  }
+
+  removeSong(String title, Songs song) async {
+    await storage.ready;
+    var val = false;
+    // print(song.toJson()['id']);
+
+    // if (element['id'] == song.toJson()['id']) {
+    //   val = true;
+    // } else {
+    //   val = false;
+    // }
+    //return val;
+    for (var playlist in playlists) {
+      var ans = false;
+      if (Playlist.fromJson(playlist).title == title) {
+        playlist['songs'].removeWhere((e) {
+          if (e['id'] == song.toJson()['id']) {
+            ans = true;
+          }
+          return ans;
+        });
+        print('REMOVED $ans');
+        _saveToStorage();
+      }
+    }
   }
 
   Future<List> getPLaylists() async {
     await storage.ready;
-    playlists = await storage.getItem('playlists');
+    playlists = await storage.getItem('playlist') ?? [];
+
     notifyListeners();
     return playlists;
   }
@@ -52,6 +104,7 @@ class FavouritesHelper with ChangeNotifier {
   init() async {
     favourites = await getFavourites();
     print('INIT FAV HELPER');
+    notifyListeners();
   }
 
   FavouritesHelper() {
@@ -97,7 +150,9 @@ class FavouritesHelper with ChangeNotifier {
 
   getFavourites() async {
     await storage.ready;
-    List fav = await storage.getItem('favourite');
+    List fav = await storage.getItem('favourite') ?? [];
+    notifyListeners();
+
     return fav;
   }
 }
