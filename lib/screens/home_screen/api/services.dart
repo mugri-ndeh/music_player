@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:Excite/screens/home_screen/api/Songs.dart';
+import 'package:Excite/screens/home_screen/model/playlist.dart';
 import 'package:Excite/server/api/api.dart';
 import 'package:http/http.dart' as http;
 
@@ -19,6 +20,21 @@ class SongsApi {
         return titleLower.contains(searchLower) ||
             authorLower.contains(searchLower);
       }).toList();
+    } else {
+      throw Exception();
+    }
+  }
+}
+
+class ArtistApi {
+  static Future<List<Artist>> getArtist(String query) async {
+    final url = Uri.parse(Api.artist_api);
+    final response = await http.get(url);
+
+    if (response.statusCode == 200) {
+      final List songs = json.decode(response.body);
+
+      return songs.map((json) => Artist.fromJson(json)).toList();
     } else {
       throw Exception();
     }
