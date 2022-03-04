@@ -4,6 +4,20 @@ class Artist {
   //List<Songs> songs;
   //Artist({required this.songs});
   String? name;
+  String? id;
+  String? imageSrc;
+  int? noSongs;
+
+  Artist({this.name, this.id, this.imageSrc, this.noSongs});
+
+  factory Artist.fromJson(Map<String, dynamic> json) {
+    return Artist(
+      name: json['name'],
+      id: json['id'],
+      imageSrc: json['image'],
+      noSongs: json['no_of_songs'],
+    );
+  }
   filter(List<Songs> songs) {
     for (int i = 0; i < songs.length; i++) {
       // if()
@@ -45,7 +59,39 @@ class Artist {
 
 class Playlist {
   String title;
-  List<Songs> songs;
+  List songs;
+
+  List getPlaylists(List songsFrom) {
+    List<String> playlists = [];
+
+    var seen = Set<String>();
+
+    for (int i = 0; i < songsFrom.length; i++) {
+      playlists.add(songsFrom[i].songArtist);
+      print(playlists[i]);
+    }
+    List unique = playlists.where((element) => seen.add(element)).toList();
+
+    print(unique.toString());
+    print('Lenght ${unique.length}');
+
+    List playlistSongs = [];
+    for (int i = 0; i < unique.length; i++) {
+      var temp = [];
+      for (int j = 0; j < songsFrom.length; j++) {
+        if (unique[i] == songsFrom[j].songArtist) {
+          temp.add(songsFrom[j].toJson());
+        }
+      }
+      playlistSongs.add(temp);
+      // print(artists[i]);
+    }
+
+    print(playlistSongs);
+    print('Lenght ${playlistSongs.length}');
+
+    return playlistSongs;
+  }
 
   Playlist({required this.title, required this.songs});
   toJson() {
