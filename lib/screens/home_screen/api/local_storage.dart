@@ -8,6 +8,7 @@ class PlaylistHelper with ChangeNotifier {
   List playlists = [];
   List songs = [];
   final LocalStorage storage = new LocalStorage('playlists');
+  List<Songs> allSongs = [];
 
   init() async {
     playlists = await getPLaylists();
@@ -15,6 +16,12 @@ class PlaylistHelper with ChangeNotifier {
 
   PlaylistHelper() {
     init();
+  }
+
+  getAllSongs(List<Songs> gottenSongs) {
+    allSongs = [];
+    allSongs = gottenSongs;
+    notifyListeners();
   }
 
   addItem(String title, List songs) async {
@@ -59,32 +66,32 @@ class PlaylistHelper with ChangeNotifier {
         _saveToStorage();
       }
     }
+    notifyListeners();
   }
 
   removeSong(String title, Songs song) async {
     await storage.ready;
     var val = false;
-    // print(song.toJson()['id']);
-
-    // if (element['id'] == song.toJson()['id']) {
-    //   val = true;
-    // } else {
-    //   val = false;
-    // }
-    //return val;
     for (var playlist in playlists) {
       var ans = false;
       if (Playlist.fromJson(playlist).title == title) {
-        playlist['songs'].removeWhere((e) {
-          if (e['id'] == song.toJson()['id']) {
-            ans = true;
-          }
-          return ans;
-        });
+        Playlist.fromJson(playlist)
+            .songs
+            .removeWhere((element) => Songs.fromJson(element).id == song.id);
+
+        //.map((e) => Songs.fromJson(e)).toList();
+        // .removeWhere((e) {
+        //   if (e['id'] == song.toJson()['id']) {
+        //     ans = true;
+        //   }
+        //   return ans;
+        // });
         print('REMOVED $ans');
         _saveToStorage();
+        break;
       }
     }
+    notifyListeners();
   }
 
   Future<List> getPLaylists() async {
@@ -111,9 +118,24 @@ class FavouritesHelper with ChangeNotifier {
     init();
   }
 
+  bool isfavourite(Songs song) {
+    bool favourite = false;
+    int i;
+    for (i = 0; i < favourites.length; i++) {
+      if (song.id == Songs.fromJson(favourites[i]).id) {
+        favourite = true;
+      }
+    }
+    isFavourite = favourite;
+    notifyListeners();
+    print(favourite);
+    return favourite;
+  }
+
   addFavourites(Songs song) {
     favourites.add(song.toJson());
     _saveToStorage();
+    notifyListeners();
   }
 
   remove(Songs song) async {

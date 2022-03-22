@@ -1,6 +1,9 @@
 import 'dart:async';
 import 'package:Excite/screens/home_screen/api/local_storage.dart';
 import 'package:Excite/screens/home_screen/home_screen.dart';
+import 'package:Excite/screens/home_screen/notifiers/audio_provider.dart';
+import 'package:Excite/screens/home_screen/pages/home_page.dart';
+import 'package:Excite/screens/home_screen/pages/testing%20_page.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -26,6 +29,7 @@ class MyApp extends StatelessWidget {
       providers: [
         ChangeNotifierProvider(create: (_) => FavouritesHelper()),
         ChangeNotifierProvider(create: (_) => PlaylistHelper()),
+        ChangeNotifierProvider(create: (_) => AudioHelper()),
       ],
       child: MaterialApp(
         title: 'Excite',
@@ -33,7 +37,7 @@ class MyApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
         ),
-        home: loginData != null ? HomeScreen() : LoginScreen(),
+        home: loginData != null ? HomePage() : LoginScreen(),
       ),
     );
   }

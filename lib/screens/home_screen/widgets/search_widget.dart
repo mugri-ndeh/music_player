@@ -63,45 +63,87 @@ class _SearchWidgetState extends State<SearchWidget> {
     //   ),
     // );
 
-    return TypeAheadField<Songs?>(
-      suggestionsCallback: SongsApi.getSongs,
-      itemBuilder: (context, Songs? suggesion) {
-        final song = suggesion;
-        return Padding(
-          padding: const EdgeInsets.all(10.0),
-          child: Container(
-            child: ListTile(
-              leading: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: CachedNetworkImage(
-                  imageUrl: song!.songImage,
-                  height: 80,
-                  width: 80,
-                  fit: BoxFit.cover,
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+      child: TypeAheadField<Songs?>(
+        errorBuilder: (context, error) {
+          return Center(
+            child: Container(
+                height: 100,
+                decoration: BoxDecoration(color: Colors.black),
+                child: Center(
+                    child: Text('Unable to connect to cloud', style: style))),
+          );
+        },
+        suggestionsBoxDecoration: SuggestionsBoxDecoration(color: Colors.black),
+        textFieldConfiguration: TextFieldConfiguration(
+            style: style,
+            controller: controller,
+            decoration: InputDecoration(
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(50),
+                  borderSide: BorderSide(color: Colors.white, width: 1),
                 ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(50),
+                  borderSide: BorderSide(color: Colors.white, width: 2),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(50),
+                  borderSide: BorderSide(color: Colors.white, width: 2),
+                ),
+                hintStyle: TextStyle(color: Colors.white),
+                hintText: widget.hintText,
+                suffixIcon: controller.text == ""
+                    ? null
+                    : IconButton(
+                        onPressed: (() {
+                          controller.clear();
+                        }),
+                        icon: Icon(
+                          Icons.close,
+                          color: Colors.white,
+                        ),
+                      ))),
+        suggestionsCallback: SongsApi.getSongs,
+        itemBuilder: (context, Songs? suggesion) {
+          final song = suggesion;
+          return Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Container(
+              child: ListTile(
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: song!.songImage,
+                    height: 80,
+                    width: 80,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                title: Text(
+                  song.songArtist,
+                  style: GoogleFonts.poppins(
+                      textStyle: TextStyle(fontSize: 14), color: Colors.white),
+                ),
+                subtitle: Text(
+                  song.songName,
+                  style: GoogleFonts.poppins(
+                      textStyle: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                ),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16.0)),
+                selected: true,
+                selectedTileColor: Colors.blueAccent.shade100.withOpacity(0.1),
               ),
-              title: Text(
-                song.songArtist,
-                style: GoogleFonts.poppins(
-                    textStyle: TextStyle(fontSize: 14), color: Colors.white),
-              ),
-              subtitle: Text(
-                song.songName,
-                style: GoogleFonts.poppins(
-                    textStyle: TextStyle(
-                        color: Colors.white,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold)),
-              ),
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16.0)),
-              selected: true,
-              selectedTileColor: Colors.blueAccent.shade100.withOpacity(0.1),
             ),
-          ),
-        );
-      },
-      onSuggestionSelected: (Songs? suggesion) {},
+          );
+        },
+        onSuggestionSelected: (Songs? suggesion) {},
+      ),
     );
   }
 }

@@ -42,6 +42,7 @@ dependencies:
   expandable: ^5.0.1
   flutter_typeahead: ^3.2.4
   flutter_keyboard_visibility_web: ^2.0.0
+  fluttertoast: ^8.0.9
 
 dev_dependencies:
   flutter_test:

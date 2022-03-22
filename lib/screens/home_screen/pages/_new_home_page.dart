@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 import 'dart:ui';
 import 'package:Excite/screens/home_screen/api/Songs.dart';
 import 'package:Excite/screens/home_screen/api/local_storage.dart';
@@ -14,6 +15,7 @@ import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:expandable/expandable.dart';
 import 'package:flutter_neumorphic/flutter_neumorphic.dart';
+import 'package:flutter_typeahead/flutter_typeahead.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:Excite/constants/constants.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
@@ -46,6 +48,7 @@ class _NewHomePageState extends State<NewHomePage>
   bool isLoading = true;
   bool isFavSong = false;
   var _formKey = GlobalKey<FormState>();
+  final controller = TextEditingController();
 
   int _selectedindex = 0;
   TextEditingController _textController = TextEditingController();
@@ -77,7 +80,7 @@ class _NewHomePageState extends State<NewHomePage>
 
   getArtistsSongs() {
     Artist artist = Artist();
-    artistSongs = artist.getArtists(temp);
+    //artistSongs = artist.getArtists(temp);
     return artistSongs;
   }
 
@@ -92,20 +95,11 @@ class _NewHomePageState extends State<NewHomePage>
     return src;
   }
 
-  playlistsInit(List songs) {
+  playlistsInit() {
     playlistProvider = Provider.of<PlaylistHelper>(
       context,
       listen: false,
     );
-    if (playlistProvider.playlists.isEmpty) {
-      playlistProvider.addItem('All songs', songs);
-    } else {
-      for (var playlist in playlistProvider.playlists) {
-        if (Playlist.fromJson(playlist).title == 'All songs') {
-          Playlist.fromJson(playlist).songs = songs;
-        }
-      }
-    }
   }
 
   getPlayList(String title) {
@@ -121,7 +115,7 @@ class _NewHomePageState extends State<NewHomePage>
   @override
   void initState() {
     init();
-    playlistsInit(songs);
+    playlistsInit();
     getFav();
     _controller = AnimationController(
         vsync: this, duration: const Duration(milliseconds: 800));
@@ -234,7 +228,7 @@ class _NewHomePageState extends State<NewHomePage>
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    buildSearch(),
+                    _searchResult(),
                     Padding(
                       padding: const EdgeInsets.symmetric(
                           horizontal: 24, vertical: 10),
@@ -246,7 +240,7 @@ class _NewHomePageState extends State<NewHomePage>
                               CustomButtonWidget(
                                   child: Center(
                                     child: FaIcon(
-                                      Icons.playlist_play_rounded,
+                                      Icons.music_note,
                                       color: _selectedindex == 0
                                           ? white
                                           : Colors.grey,
@@ -256,12 +250,12 @@ class _NewHomePageState extends State<NewHomePage>
                                     setState(() {
                                       _selectedindex = 0;
                                       songs = playSongs;
-                                      playlistsInit(playSongs);
+                                      //playlistsInit(playSongs);
                                     });
                                   },
                                   size: 40),
                               Text(
-                                "Playlists",
+                                "All songs",
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
                                   color:
@@ -277,23 +271,21 @@ class _NewHomePageState extends State<NewHomePage>
                               CustomButtonWidget(
                                   child: Center(
                                     child: FaIcon(
-                                      FontAwesomeIcons.solidHeart,
-                                      size: 16,
+                                      Icons.playlist_play_rounded,
                                       color: _selectedindex == 1
                                           ? white
                                           : Colors.grey,
                                     ),
                                   ),
                                   onTap: () {
-                                    setState(() async {
+                                    setState(() {
                                       _selectedindex = 1;
-                                      getFav();
-                                      favouriteSongs = await getFav();
+                                      songs = playSongs;
                                     });
                                   },
                                   size: 40),
                               Text(
-                                "Favourites",
+                                "Playlists",
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
                                   color:
@@ -309,7 +301,7 @@ class _NewHomePageState extends State<NewHomePage>
                               CustomButtonWidget(
                                   child: Center(
                                     child: FaIcon(
-                                      FontAwesomeIcons.podcast,
+                                      FontAwesomeIcons.solidHeart,
                                       size: 16,
                                       color: _selectedindex == 2
                                           ? white
@@ -317,8 +309,40 @@ class _NewHomePageState extends State<NewHomePage>
                                     ),
                                   ),
                                   onTap: () {
-                                    setState(() {
+                                    setState(() async {
                                       _selectedindex = 2;
+                                      getFav();
+                                      favouriteSongs = await getFav();
+                                    });
+                                  },
+                                  size: 40),
+                              Text(
+                                "Favourites",
+                                style: GoogleFonts.poppins(
+                                  fontSize: 12,
+                                  color:
+                                      _selectedindex == 2 ? white : Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                          SizedBox(
+                              width: MediaQuery.of(context).size.width * 0.07),
+                          Column(
+                            children: [
+                              CustomButtonWidget(
+                                  child: Center(
+                                    child: FaIcon(
+                                      FontAwesomeIcons.podcast,
+                                      size: 16,
+                                      color: _selectedindex == 3
+                                          ? white
+                                          : Colors.grey,
+                                    ),
+                                  ),
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedindex = 3;
                                       getArtistsSongs();
                                     });
                                   },
@@ -328,7 +352,7 @@ class _NewHomePageState extends State<NewHomePage>
                                 style: GoogleFonts.poppins(
                                   fontSize: 12,
                                   color:
-                                      _selectedindex == 2 ? white : Colors.grey,
+                                      _selectedindex == 3 ? white : Colors.grey,
                                 ),
                               ),
                             ],
@@ -356,6 +380,7 @@ class _NewHomePageState extends State<NewHomePage>
                       : IndexedStack(
                           index: _selectedindex,
                           children: [
+                            _buildAllSongs(),
                             _buildPlaylist(),
                             _buildFavourites(),
                             _buildArtists(),
@@ -586,61 +611,68 @@ class _NewHomePageState extends State<NewHomePage>
     return Scaffold(
       backgroundColor: Colors.black,
       body: Consumer<FavouritesHelper>(
-        builder: (_, favProv, __) => ListView.builder(
-          padding: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
-          itemCount: favProv.favourites.length,
-          physics: BouncingScrollPhysics(),
-          itemBuilder: (context, index) {
-            return Center(
-              child: GestureDetector(
-                onTap: () {
-                  setState(() async {
-                    currentPlaylist = await getFav();
-                    isFavSong = isfavourite(songs[index]);
-                    CurrentSong.currentSong = index;
-                    CurrentSong.favourite = true;
-                    _audioPlayer.setUrl(songs[index].songSrc);
-                    _audioPlayer.play();
-                  });
+        builder: (_, favProv, __) => favProv.favourites.length == 0
+            ? Center(
+                child: Text(
+                  'No favourites',
+                  style: TextStyle(color: Colors.white),
+                ),
+              )
+            : ListView.builder(
+                padding: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
+                itemCount: favProv.favourites.length,
+                physics: BouncingScrollPhysics(),
+                itemBuilder: (context, index) {
+                  return Center(
+                    child: GestureDetector(
+                      onTap: () {
+                        setState(() async {
+                          currentPlaylist = await getFav();
+                          isFavSong = isfavourite(songs[index]);
+                          CurrentSong.currentSong = index;
+                          CurrentSong.favourite = true;
+                          _audioPlayer.setUrl(songs[index].songSrc);
+                          _audioPlayer.play();
+                        });
+                      },
+                      child: Padding(
+                          padding: const EdgeInsets.all(10.0),
+                          child: Container(
+                            child: ListTile(
+                              leading: ClipRRect(
+                                borderRadius: BorderRadius.circular(12),
+                                child: CachedNetworkImage(
+                                  imageUrl: songs[index].songImage,
+                                  height: 80,
+                                  width: 80,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              title: Text(
+                                songs[index].songArtist,
+                                style: GoogleFonts.poppins(
+                                    textStyle: TextStyle(fontSize: 14),
+                                    color: Colors.white),
+                              ),
+                              subtitle: Text(
+                                songs[index].songName,
+                                style: GoogleFonts.poppins(
+                                    textStyle: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold)),
+                              ),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(16.0)),
+                              selected: true,
+                              selectedTileColor:
+                                  Colors.blueAccent.shade100.withOpacity(0.1),
+                            ),
+                          )),
+                    ),
+                  );
                 },
-                child: Padding(
-                    padding: const EdgeInsets.all(10.0),
-                    child: Container(
-                      child: ListTile(
-                        leading: ClipRRect(
-                          borderRadius: BorderRadius.circular(12),
-                          child: CachedNetworkImage(
-                            imageUrl: songs[index].songImage,
-                            height: 80,
-                            width: 80,
-                            fit: BoxFit.cover,
-                          ),
-                        ),
-                        title: Text(
-                          songs[index].songArtist,
-                          style: GoogleFonts.poppins(
-                              textStyle: TextStyle(fontSize: 14),
-                              color: Colors.white),
-                        ),
-                        subtitle: Text(
-                          songs[index].songName,
-                          style: GoogleFonts.poppins(
-                              textStyle: TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold)),
-                        ),
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(16.0)),
-                        selected: true,
-                        selectedTileColor:
-                            Colors.blueAccent.shade100.withOpacity(0.1),
-                      ),
-                    )),
               ),
-            );
-          },
-        ),
       ),
     );
   }
@@ -731,70 +763,46 @@ class _NewHomePageState extends State<NewHomePage>
         },
       ),
       backgroundColor: Colors.black,
-      body: ListView.builder(
-        padding: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
-        itemCount: playlistProvider.playlists.length,
-        physics: BouncingScrollPhysics(),
-        itemBuilder: (context, index) {
-          return Center(
-            child: GestureDetector(
-              onTap: () {
-                String title =
-                    Playlist.fromJson(playlistProvider.playlists[index]).title;
-                setState(() {
-                  currentPlaylist = getPlayList(title);
-                  songs = currentPlaylist;
-                  isFavSong = isfavourite(currentPlaylist[index]);
+      body: playlistProvider.playlists.length == 0
+          ? Center(
+              child: Text(
+                'No playlist available',
+                style: TextStyle(color: Colors.white),
+              ),
+            )
+          : ListView.builder(
+              padding: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
+              itemCount: playlistProvider.playlists.length,
+              physics: BouncingScrollPhysics(),
+              itemBuilder: (context, index) {
+                return Center(
+                  child: GestureDetector(
+                    onTap: () {
+                      String title =
+                          Playlist.fromJson(playlistProvider.playlists[index])
+                              .title;
+                      setState(() {
+                        currentPlaylist = getPlayList(title);
+                        songs = currentPlaylist;
+                        isFavSong = isfavourite(currentPlaylist[index]);
 
-                  CurrentSong.currentSong = index;
-                  print('IS Current song: ${CurrentSong.favourite}');
-                });
-                _audioPlayer.setUrl(currentPlaylist[index].songSrc);
-                _audioPlayer.play();
+                        CurrentSong.currentSong = index;
+                        print('IS Current song: ${CurrentSong.favourite}');
+                      });
+                      _audioPlayer.setUrl(currentPlaylist[index].songSrc);
+                      _audioPlayer.play();
+                    },
+                    child: _buildPlayCard(
+                        Playlist.fromJson(playlistProvider.playlists[index])
+                            .songs
+                            .map((e) => Songs.fromJson(e))
+                            .toList(),
+                        Playlist.fromJson(playlistProvider.playlists[index])
+                            .title),
+                  ),
+                );
               },
-              child: _buildPlayCard(
-                  Playlist.fromJson(playlistProvider.playlists[index])
-                      .songs
-                      .map((e) => Songs.fromJson(e))
-                      .toList(),
-                  Playlist.fromJson(playlistProvider.playlists[index]).title),
-              // child: Padding(
-              //     padding: const EdgeInsets.all(10.0),
-              //     child: Container(
-              //       child: ListTile(
-              //         leading: ClipRRect(
-              //           borderRadius: BorderRadius.circular(12),
-              //           child: CachedNetworkImage(
-              //             imageUrl: songs[index].songImage,
-              //             height: 80,
-              //             width: 80,
-              //             fit: BoxFit.cover,
-              //           ),
-              //         ),
-              //         title: Text(
-              //           songs[index].songArtist,
-              //           style: GoogleFonts.poppins(
-              //               textStyle: TextStyle(fontSize: 14), color: white),
-              //         ),
-              //         subtitle: Text(
-              //           songs[index].songName,
-              //           style: GoogleFonts.poppins(
-              //               textStyle: TextStyle(
-              //                   color: white,
-              //                   fontSize: 18,
-              //                   fontWeight: FontWeight.bold)),
-              //         ),
-              //         shape: RoundedRectangleBorder(
-              //             borderRadius: BorderRadius.circular(16.0)),
-              //         selected: true,
-              //         selectedTileColor:
-              //             Colors.blueAccent.shade100.withOpacity(0.1),
-              //       ),
-              //     )),
             ),
-          );
-        },
-      ),
     );
   }
 
@@ -838,54 +846,54 @@ class _NewHomePageState extends State<NewHomePage>
                                           var p = playlistProvider.playlists
                                               .map((e) => Playlist.fromJson(e))
                                               .toList();
-                                          return p.length == 1
-                                              ? Text(
-                                                  'Create a new playlist first')
+                                          return p.length == 0
+                                              ? Center(
+                                                  child: Text(
+                                                      'No playlist available',
+                                                      style: TextStyle(
+                                                          color: Colors.white)))
                                               : ListView.builder(
                                                   itemCount: p.length,
                                                   shrinkWrap: true,
                                                   itemBuilder: (c, i) =>
-                                                      p[i].title == 'All songs'
-                                                          ? Container()
-                                                          : GestureDetector(
-                                                              onTap: () {
-                                                                playlistProvider.addToPlaylist(
-                                                                    p[i].title,
-                                                                    currentPlaylist[
-                                                                        CurrentSong
-                                                                            .currentSong!]);
-                                                                Navigator.pop(
-                                                                    context);
-                                                              },
-                                                              child: Padding(
-                                                                padding:
-                                                                    const EdgeInsets
-                                                                            .all(
-                                                                        8.0),
-                                                                child: ListTile(
-                                                                  title: Text(
-                                                                    p[i].title,
-                                                                    style: GoogleFonts.poppins(
-                                                                        textStyle: TextStyle(
-                                                                            fontSize:
-                                                                                14),
-                                                                        color:
-                                                                            white),
-                                                                  ),
-                                                                  shape: RoundedRectangleBorder(
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              16.0)),
-                                                                  selected:
-                                                                      true,
-                                                                  selectedTileColor: Colors
-                                                                      .blueAccent
-                                                                      .shade100
-                                                                      .withOpacity(
-                                                                          0.1),
-                                                                ),
-                                                              ),
-                                                            ),
+                                                      GestureDetector(
+                                                    onTap: () {
+                                                      playlistProvider
+                                                          .addToPlaylist(
+                                                              p[i].title,
+                                                              currentPlaylist[
+                                                                  CurrentSong
+                                                                      .currentSong!]);
+                                                      Navigator.pop(context);
+                                                    },
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                              8.0),
+                                                      child: ListTile(
+                                                        title: Text(
+                                                          p[i].title,
+                                                          style: GoogleFonts.poppins(
+                                                              textStyle:
+                                                                  TextStyle(
+                                                                      fontSize:
+                                                                          14),
+                                                              color: white),
+                                                        ),
+                                                        shape: RoundedRectangleBorder(
+                                                            borderRadius:
+                                                                BorderRadius
+                                                                    .circular(
+                                                                        16.0)),
+                                                        selected: true,
+                                                        selectedTileColor:
+                                                            Colors.blueAccent
+                                                                .shade100
+                                                                .withOpacity(
+                                                                    0.1),
+                                                      ),
+                                                    ),
+                                                  ),
                                                 );
                                         },
                                       ),
@@ -1025,6 +1033,15 @@ class _NewHomePageState extends State<NewHomePage>
                             isShuffle = !isShuffle;
                             _audioPlayer.shuffleIndices;
                             _audioPlayer.setShuffleModeEnabled(isShuffle);
+                            var tempo = [];
+                            if (isShuffle) {
+                              tempo = currentPlaylist;
+
+                              currentPlaylist
+                                  .shuffle(Random(CurrentSong.currentSong));
+                            } else {
+                              currentPlaylist = tempo;
+                            }
                           });
                         },
                         size: 40),
@@ -1306,7 +1323,157 @@ class _NewHomePageState extends State<NewHomePage>
   }
 
   Widget _searchResult() {
-    return Container();
+    final styleActive = TextStyle(color: white);
+    final styleHint = TextStyle(color: white);
+    final style = controller.text.isEmpty ? styleHint : styleActive;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+      child: TypeAheadField<Songs?>(
+        errorBuilder: (context, error) {
+          return Center(
+            child: Container(
+                height: 100,
+                decoration: BoxDecoration(color: Colors.black),
+                child: Center(
+                    child: Text('Unable to connect to cloud', style: style))),
+          );
+        },
+        suggestionsBoxDecoration: SuggestionsBoxDecoration(color: Colors.black),
+        textFieldConfiguration: TextFieldConfiguration(
+            style: style,
+            controller: controller,
+            decoration: InputDecoration(
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(50),
+                  borderSide: BorderSide(color: Colors.white, width: 1),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(50),
+                  borderSide: BorderSide(color: Colors.white, width: 2),
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(50),
+                  borderSide: BorderSide(color: Colors.white, width: 2),
+                ),
+                hintStyle: TextStyle(color: Colors.white),
+                hintText: 'Title or Artist name',
+                suffixIcon: controller.text == ""
+                    ? null
+                    : IconButton(
+                        onPressed: (() {
+                          setState(() {
+                            controller.clear();
+                          });
+                        }),
+                        icon: Icon(
+                          Icons.close,
+                          color: Colors.white,
+                        ),
+                      ))),
+        suggestionsCallback: SongsApi.getSongs,
+        itemBuilder: (context, Songs? suggesion) {
+          final song = suggesion;
+          return Padding(
+            padding: const EdgeInsets.all(10.0),
+            child: Container(
+              child: ListTile(
+                leading: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: CachedNetworkImage(
+                    imageUrl: song!.songImage,
+                    height: 80,
+                    width: 80,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                title: Text(
+                  song.songArtist,
+                  style: GoogleFonts.poppins(
+                      textStyle: TextStyle(fontSize: 14), color: Colors.white),
+                ),
+                subtitle: Text(
+                  song.songName,
+                  style: GoogleFonts.poppins(
+                      textStyle: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold)),
+                ),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16.0)),
+                selected: true,
+                selectedTileColor: Colors.blueAccent.shade100.withOpacity(0.1),
+              ),
+            ),
+          );
+        },
+        onSuggestionSelected: (Songs? suggesion) {
+          setState(() {
+            currentPlaylist = [];
+            currentPlaylist.add(suggesion);
+            isFavSong = isfavourite(suggesion!);
+            CurrentSong.currentSong = 0;
+            _audioPlayer.setUrl(suggesion.songSrc);
+            _audioPlayer.play();
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildAllSongs() {
+    return ListView.builder(
+      padding: EdgeInsets.symmetric(vertical: 5.0, horizontal: 10),
+      itemCount: songs.length,
+      physics: BouncingScrollPhysics(),
+      itemBuilder: (context, index) {
+        return Center(
+          child: GestureDetector(
+            onTap: () {
+              setState(() {
+                currentPlaylist = playSongs;
+                CurrentSong.currentSong = index;
+              });
+              _audioPlayer.setUrl(playSongs[index].songSrc);
+              _audioPlayer.play();
+            },
+            child: Padding(
+                padding: const EdgeInsets.all(10.0),
+                child: Container(
+                  child: ListTile(
+                    leading: ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: CachedNetworkImage(
+                        imageUrl: playSongs[index].songImage,
+                        height: 80,
+                        width: 80,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    title: Text(
+                      playSongs[index].songArtist,
+                      style: GoogleFonts.poppins(
+                          textStyle: TextStyle(fontSize: 14), color: white),
+                    ),
+                    subtitle: Text(
+                      playSongs[index].songName,
+                      style: GoogleFonts.poppins(
+                          textStyle: TextStyle(
+                              color: white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold)),
+                    ),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16.0)),
+                    selected: true,
+                    selectedTileColor:
+                        Colors.blueAccent.shade100.withOpacity(0.1),
+                  ),
+                )),
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildPlayCard(List playlists1, String playlistName) {
@@ -1337,19 +1504,17 @@ class _NewHomePageState extends State<NewHomePage>
                                 fontSize: 18, fontWeight: FontWeight.bold),
                             color: Colors.white),
                       ),
-                      trailing: playlistName == 'All songs'
-                          ? SizedBox.shrink()
-                          : TextButton(
-                              child: Text(
-                                'Remove',
-                                style: TextStyle(color: Colors.red),
-                              ),
-                              onPressed: () {
-                                debugPrint('DELETE');
-                                playlistProvider.removePlaylist(playlistName);
-                                setState(() {});
-                              },
-                            ),
+                      trailing: TextButton(
+                        child: Text(
+                          'Remove',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                        onPressed: () {
+                          debugPrint('DELETE');
+                          playlistProvider.removePlaylist(playlistName);
+                          setState(() {});
+                        },
+                      ),
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(16.0)),
                       selected: true,

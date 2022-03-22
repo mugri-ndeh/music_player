@@ -24,7 +24,7 @@ class Artist {
     }
   }
 
-  List getArtists(List songsFrom) {
+  List<List<Songs>> getArtists(List<Songs> songsFrom) {
     List<String> artists = [];
 
     var seen = Set<String>();
@@ -38,12 +38,12 @@ class Artist {
     print(unique.toString());
     print('Lenght ${unique.length}');
 
-    List artistSongs = [];
+    List<List<Songs>> artistSongs = [];
     for (int i = 0; i < unique.length; i++) {
-      var temp = [];
+      List<Songs> temp = [];
       for (int j = 0; j < songsFrom.length; j++) {
         if (unique[i] == songsFrom[j].songArtist) {
-          temp.add(songsFrom[j].toJson());
+          temp.add(songsFrom[j]);
         }
       }
       artistSongs.add(temp);
