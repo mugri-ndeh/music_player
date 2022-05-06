@@ -10,7 +10,6 @@ import 'package:Excite/screens/home_screen/notifiers/progress_notifier.dart';
 import 'package:Excite/screens/home_screen/widgets/custom_button.dart';
 import 'package:Excite/screens/home_screen/widgets/search_widget.dart';
 import 'package:Excite/screens/home_screen/widgets/shimmer_widget.dart';
-import 'package:Excite/screens/profile_screen/profile.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:expandable/expandable.dart';
@@ -191,22 +190,6 @@ class _NewHomePageState extends State<NewHomePage>
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            onPressed: () {
-              _audioPlayer.pause();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => EditProfile()),
-              );
-            },
-            icon: FaIcon(FontAwesomeIcons.user),
-            iconSize: 16,
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-          )
-        ],
         title: Container(
           width: 100,
           height: 30,
