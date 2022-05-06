@@ -15,7 +15,6 @@ import 'package:Excite/screens/home_screen/widgets/playlists.dart';
 import 'package:Excite/screens/home_screen/widgets/search_widget.dart';
 import 'package:Excite/screens/home_screen/widgets/shimmer_widget.dart';
 import 'package:Excite/screens/home_screen/widgets/song_player.dart';
-import 'package:Excite/screens/profile_screen/profile.dart';
 import 'package:audio_video_progress_bar/audio_video_progress_bar.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:expandable/expandable.dart';
@@ -117,22 +116,6 @@ class _HomePageState extends State<HomePage> with TickerProviderStateMixin {
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            onPressed: () {
-              audioHelper.pause();
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => EditProfile()),
-              );
-            },
-            icon: FaIcon(FontAwesomeIcons.user),
-            iconSize: 16,
-            padding: EdgeInsets.symmetric(horizontal: 24),
-            splashColor: Colors.transparent,
-            highlightColor: Colors.transparent,
-          )
-        ],
         title: Container(
           width: 100,
           height: 30,
